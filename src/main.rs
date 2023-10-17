@@ -1,5 +1,5 @@
-use serde_repr::{Serialize_repr, Deserialize_repr};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
@@ -28,7 +28,7 @@ fn main() {
         intermediate: IntermediateStruct {
             byte: ByteEnum::One,
             other: 1,
-        }
+        },
     };
     let xml_0 = quick_xml::se::to_string_with_root("root", &root_0).unwrap();
     println!("XML_0: {xml_0:?}");
