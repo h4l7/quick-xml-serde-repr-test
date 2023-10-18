@@ -12,11 +12,11 @@ pub enum ByteEnum {
     Three = 3,
 }
 
-impl FromStr for ByteEnum {
+impl FromXmlStr for ByteEnum {
     // TODO real error types
-    type Err = anyhow::Error;
+    type Error = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_xml_str(s: &str) -> Result<Self, Self::Error> {
         let byte: u8 = FromStr::from_str(s)?;
 
         match byte {
@@ -73,7 +73,7 @@ pub fn flattened_xml_attr<'de, D: Deserializer<'de>, T: FromXmlStr + Deserialize
 
     match TypeOrString::<T>::deserialize(deserializer)? {
         TypeOrString::Ty(t) => Ok(t),
-        TypeOrString::String(s) => T::from_str(&s).map_err(serde::de::Error::custom),
+        TypeOrString::String(s) => T::from_xml_str(&s).map_err(serde::de::Error::custom),
     }
 }
 
@@ -82,8 +82,7 @@ pub fn flattened_xml_attr<'de, D: Deserializer<'de>, T: FromXmlStr + Deserialize
 /// serde-xml-rs for Serde data model types.
 pub trait FromXmlStr: Sized {
     type Error: std::fmt::Display;
-    fn from_str(s: &str) -> Result<Self, Self::Error>;
-    fn deserialize_from_type<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error>;
+    fn from_xml_str(s: &str) -> Result<Self, Self::Error>;
 }
 
 macro_rules! impl_from_xml_str_as_from_str {
@@ -91,12 +90,8 @@ macro_rules! impl_from_xml_str_as_from_str {
         $(
             impl FromXmlStr for $t {
                 type Error = <$t as std::str::FromStr>::Err;
-                fn from_str(s: &str) -> Result<Self, Self::Error> {
+                fn from_xml_str(s: &str) -> Result<Self, Self::Error> {
                     s.parse()
-                }
-
-                fn deserialize_from_type<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-                    <$t>::deserialize(deserializer)
                 }
             }
         )*
@@ -106,22 +101,18 @@ macro_rules! impl_from_xml_str_as_from_str {
 impl_from_xml_str_as_from_str! {
     usize u8 u16 u32 u64 u128
     isize i8 i16 i32 i64 i128
-    f32 f64 char ByteEnum
+    f32 f64 char
 }
 
 /// Can parse from "1"/"0" as well as "true"/"false".
 impl FromXmlStr for bool {
     type Error = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Error> {
+    fn from_xml_str(s: &str) -> Result<Self, Self::Error> {
         match s {
             "true" | "1" => Ok(true),
             "false" | "0" => Ok(false),
             s => Err(format!("\"{}\" is not a valid bool", s)),
         }
-    }
-
-    fn deserialize_from_type<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        bool::deserialize(deserializer)
     }
 }
